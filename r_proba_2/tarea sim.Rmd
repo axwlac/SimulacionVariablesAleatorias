@@ -1,0 +1,145 @@
+---
+title: "Tarea de Simulación"
+author: "Axel Arellano Carmona"
+date: "14 de mayo de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Densidades
+## Exp(lambda)
+Para simular una exponencial de parametro lambda se requiere simular un número aleatorio con runif, definir la función de parametros n y lambda. Como la Fd de una exp es $$1-exp(-l)=u$$ si despejamos obtenemos $$l=-log(1-u)$$ lo cual es lo que necesitmas para simulkar una exponencial. 
+```{r}
+set.seed(31519744)
+library(ggplot2)
+library(purrr)
+sims.exp <- function(n,lambda){
+  u <- runif(n)
+  l <- -log(1-u)/lambda
+}
+n <- 1000000
+lambda <- 5
+sims_exp <- sims.exp(n, lambda)
+sims_exp[1:10]
+df.exp <- data.frame(Distribución=rep("Exp", n), Simulación= sims_exp)
+p.exp <- ggplot(df.exp, aes(x=Simulación, fill=Distribución)) +
+  geom_density()
+p.exp
+```
+
+## Poisson (lambda)
+```{r}
+rpoisI <- function(lambda = 1){
+  U <- runif(1)
+  i <- 0
+  p <- exp(-lambda)
+  P <- p
+  while(U >= P){
+    p <- lambda * p / (i + 1)
+    P <- P + p
+    i <- i + 1
+  }
+  i
+}
+sims_pois <- rerun(1000000, rpoisI()) %>% flatten_dbl()
+qplot(sims_pois, binwidth = 1)
+```
+
+## Gamma (k,lambda)
+```{r}
+G <- function(k,l)sum(sims.exp(k,lambda))
+sims.gamma <- function(n,k,lambda){
+  x <- G(k,lambda)
+  for(i in 2:n){
+    x <- c(x,G(k,l))
+  }
+  return(x)
+}
+n <- 10000
+k <- 2
+lambda <- 2
+sims_gamma <- sims.gamma(n,k,lambda)
+sims_gamma[1:10]
+df.gamma <- data.frame(Distribución=rep("Gamma",n), Simulación= sims_gamma)
+p.gamma <- ggplot(df.gamma, aes(x=Simulación, fill=Distribución)) +
+  geom_density()
+p.gamma
+```
+
+##Beta
+
+
+## Normal(mu,sig2)
+```{r}
+sims.norm <- function(n, mu, sig){
+  u <- runif(n)
+  w <- runif(n)
+  s <- (-2*log(u))^.5
+  t <- (2*3.141516*w)
+  x <- ((s*cos(t))+mu)/sig
+  y <- ((s*sin(t))+mu)/sig
+}
+n <- 10000000
+mu <- 0
+sig <- 1
+sims_norm <- sims.norm(n, mu, sig)
+sims_norm[1:10]
+df.norm <-  data.frame(Distribución=rep("Normal", n), Simulación= sims_norm)
+p.norm <- ggplot(df.norm, aes(x=Simulación, fill=Distribución)) +
+  geom_density()
+p.norm
+```
+
+##Cauchy(0,1)
+```{r}
+n <- 100000
+k <- 100000
+sims.norm1 <- function(n){
+  u <- runif(n)
+  w <- runif(n)
+  s <- (-2*log(u))^.5
+  t <- (2*3.141516*w)
+  x <- s*cos(t)
+  y <- s*sin(t)
+}
+sims.norm2 <- function(k){
+  j <- runif(k)
+  h <- runif(k)
+  a <- (-2*log(j))^.5
+  b <- (2*3.141516*h)
+  c <- a*cos(b)
+  d <- a*sin(b)
+}
+sims.cau <- sims.norm1(n)/sims.norm2(k)
+sims.cau[1:10]
+df.cau <- data.frame(Distribución=rep("Cauchy",n), Simulación= sims.cau)
+p.cau <- ggplot(df.cau, aes(x=Simulación, fill=Distribución)) +
+  geom_density()
+p.cau
+```
+
+##chi cuadrada(k)
+```{r}
+sims.ji2 <- (sims.norm(n,0,1))^2+(sims.norm(n,0,1))^2+(sims.norm(n,0,1))^2
+sims_ji2 <- sims.ji2
+sims_ji2[1:10]
+df.ji2 <-  data.frame(Distribución=rep("Ji cuadrada", n), Simulación= sims_ji2)
+p.ji2 <- ggplot(df.ji2, aes(x=Simulación, fill=Distribución)) +
+  geom_density()
+p.ji2
+```
+
+## t(k)
+```{r}
+k <- 1000000
+sim.t <- sims.norm(k,0,1)/((sims.ji2/3)^.5)
+sim.t[1:100]
+df.t <- data.frame(Distribución=rep("t de student", n), Simulación= sim.t)
+p.t <- ggplot(df.t, aes(x=Simulación, fill=Distribución)) +
+  geom_density()
+p.t
+```
+
+##F(k,l)
